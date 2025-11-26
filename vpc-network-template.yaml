@@ -118,9 +118,6 @@ Resources:
     Properties:
       GroupDescription: Default security group for VPC1
       VpcId: !Ref VPC1
-      SecurityGroupIngress:
-        - IpProtocol: -1
-          SourceSecurityGroupId: !Ref VPC1DefaultSecurityGroup
       Tags:
         - Key: Name
           Value: !Sub '${VPC1Environment}-VPC1-Default-SG'
@@ -225,9 +222,6 @@ Resources:
     Properties:
       GroupDescription: Default security group for VPC2
       VpcId: !Ref VPC2
-      SecurityGroupIngress:
-        - IpProtocol: -1
-          SourceSecurityGroupId: !Ref VPC2DefaultSecurityGroup
       Tags:
         - Key: Name
           Value: !Sub '${VPC2Environment}-VPC2-Default-SG'
