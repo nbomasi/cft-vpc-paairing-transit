@@ -1,0 +1,273 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS VPC Network with 2 VPCs, each having 1 public and 1 private subnet in us-west-2 region'
+
+Parameters:
+  VPC1Environment:
+    Type: String
+    Default: Production
+    AllowedValues:
+      - Production
+      - Staging
+      - Development
+    Description: Environment name for VPC1
+  VPC2Environment:
+    Type: String
+    Default: Development
+    AllowedValues:
+      - Production
+      - Staging
+      - Development
+    Description: Environment name for VPC2
+
+Resources:
+  VPC1:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${VPC1Environment}-VPC1'
+        - Key: Environment
+          Value: !Ref VPC1Environment
+
+  VPC1PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC1
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${VPC1Environment}-VPC1-Public-Subnet'
+        - Key: Environment
+          Value: !Ref VPC1Environment
+
+  VPC1PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC1
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub '${VPC1Environment}-VPC1-Private-Subnet'
+        - Key: Environment
+          Value: !Ref VPC1Environment
+
+  VPC1InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub '${VPC1Environment}-VPC1-IGW'
+        - Key: Environment
+          Value: !Ref VPC1Environment
+
+  VPC1InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref VPC1InternetGateway
+      VpcId: !Ref VPC1
+
+  VPC1PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC1
+      Tags:
+        - Key: Name
+          Value: !Sub '${VPC1Environment}-VPC1-Public-RouteTable'
+        - Key: Environment
+          Value: !Ref VPC1Environment
+
+  VPC1DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VPC1InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref VPC1PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref VPC1InternetGateway
+
+  VPC1PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref VPC1PublicSubnet
+      RouteTableId: !Ref VPC1PublicRouteTable
+
+  VPC1PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC1
+      Tags:
+        - Key: Name
+          Value: !Sub '${VPC1Environment}-VPC1-Private-RouteTable'
+        - Key: Environment
+          Value: !Ref VPC1Environment
+
+  VPC1PrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref VPC1PrivateSubnet
+      RouteTableId: !Ref VPC1PrivateRouteTable
+
+  VPC1DefaultSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Default security group for VPC1
+      VpcId: !Ref VPC1
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          SourceSecurityGroupId: !Ref VPC1DefaultSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub '${VPC1Environment}-VPC1-Default-SG'
+        - Key: Environment
+          Value: !Ref VPC1Environment
+
+  VPC2:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 172.16.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${VPC2Environment}-VPC2'
+        - Key: Environment
+          Value: !Ref VPC2Environment
+
+  VPC2PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC2
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: 172.16.1.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${VPC2Environment}-VPC2-Public-Subnet'
+        - Key: Environment
+          Value: !Ref VPC2Environment
+
+  VPC2PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC2
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: 172.16.2.0/24
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub '${VPC2Environment}-VPC2-Private-Subnet'
+        - Key: Environment
+          Value: !Ref VPC2Environment
+
+  VPC2InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub '${VPC2Environment}-VPC2-IGW'
+        - Key: Environment
+          Value: !Ref VPC2Environment
+
+  VPC2InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref VPC2InternetGateway
+      VpcId: !Ref VPC2
+
+  VPC2PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC2
+      Tags:
+        - Key: Name
+          Value: !Sub '${VPC2Environment}-VPC2-Public-RouteTable'
+        - Key: Environment
+          Value: !Ref VPC2Environment
+
+  VPC2DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VPC2InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref VPC2PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref VPC2InternetGateway
+
+  VPC2PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref VPC2PublicSubnet
+      RouteTableId: !Ref VPC2PublicRouteTable
+
+  VPC2PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC2
+      Tags:
+        - Key: Name
+          Value: !Sub '${VPC2Environment}-VPC2-Private-RouteTable'
+        - Key: Environment
+          Value: !Ref VPC2Environment
+
+  VPC2PrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref VPC2PrivateSubnet
+      RouteTableId: !Ref VPC2PrivateRouteTable
+
+  VPC2DefaultSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Default security group for VPC2
+      VpcId: !Ref VPC2
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          SourceSecurityGroupId: !Ref VPC2DefaultSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub '${VPC2Environment}-VPC2-Default-SG'
+        - Key: Environment
+          Value: !Ref VPC2Environment
+
+Outputs:
+  VPC1Id:
+    Description: VPC ID for VPC1
+    Value: !Ref VPC1
+    Export:
+      Name: !Sub '${AWS::StackName}-VPC1-Id'
+
+  VPC1PublicSubnetId:
+    Description: Public Subnet ID for VPC1
+    Value: !Ref VPC1PublicSubnet
+    Export:
+      Name: !Sub '${AWS::StackName}-VPC1-Public-Subnet-Id'
+
+  VPC1PrivateSubnetId:
+    Description: Private Subnet ID for VPC1
+    Value: !Ref VPC1PrivateSubnet
+    Export:
+      Name: !Sub '${AWS::StackName}-VPC1-Private-Subnet-Id'
+
+  VPC2Id:
+    Description: VPC ID for VPC2
+    Value: !Ref VPC2
+    Export:
+      Name: !Sub '${AWS::StackName}-VPC2-Id'
+
+  VPC2PublicSubnetId:
+    Description: Public Subnet ID for VPC2
+    Value: !Ref VPC2PublicSubnet
+    Export:
+      Name: !Sub '${AWS::StackName}-VPC2-Public-Subnet-Id'
+
+  VPC2PrivateSubnetId:
+    Description: Private Subnet ID for VPC2
+    Value: !Ref VPC2PrivateSubnet
+    Export:
+      Name: !Sub '${AWS::StackName}-VPC2-Private-Subnet-Id'
+
