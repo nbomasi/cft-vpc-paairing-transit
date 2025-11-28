@@ -1,0 +1,123 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'EC2 Instances for Production and Development VPCs'
+
+Parameters:
+  VPC1Id:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID for Production VPC
+  VPC1PublicSubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: Public Subnet ID for Production VPC
+  VPC2Id:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID for Development VPC
+  VPC2PublicSubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: Public Subnet ID for Development VPC
+  KeyPairName:
+    Type: String
+    Description: EC2 Key Pair name for SSH access
+    Default: cft-key
+  UbuntuAMIId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+    Description: Ubuntu AMI ID (defaults to latest Ubuntu 22.04 LTS)
+
+Resources:
+  ProductionVPCSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Production VPC EC2 instance - allows SSH and ICMP
+      VpcId: !Ref VPC1Id
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: Allow SSH from anywhere
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow ICMP (ping) from anywhere
+      Tags:
+        - Key: Name
+          Value: Production-VPC-EC2-SecurityGroup
+
+  DevelopmentVPCSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Development VPC EC2 instance - allows SSH and ICMP
+      VpcId: !Ref VPC2Id
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: Allow SSH from anywhere
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow ICMP (ping) from anywhere
+      Tags:
+        - Key: Name
+          Value: Development-VPC-EC2-SecurityGroup
+
+  ProductionEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref UbuntuAMIId
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      SubnetId: !Ref VPC1PublicSubnetId
+      SecurityGroupIds:
+        - !Ref ProductionVPCSecurityGroup
+      AssociatePublicIpAddress: true
+      Tags:
+        - Key: Name
+          Value: Production-VPC-EC2-Instance
+        - Key: Environment
+          Value: Production
+
+  DevelopmentEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref UbuntuAMIId
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      SubnetId: !Ref VPC2PublicSubnetId
+      SecurityGroupIds:
+        - !Ref DevelopmentVPCSecurityGroup
+      AssociatePublicIpAddress: true
+      Tags:
+        - Key: Name
+          Value: Development-VPC-EC2-Instance
+        - Key: Environment
+          Value: Development
+
+Outputs:
+  ProductionEC2InstanceId:
+    Description: Instance ID of Production VPC EC2 instance
+    Value: !Ref ProductionEC2Instance
+    Export:
+      Name: !Sub '${AWS::StackName}-Production-EC2-InstanceId'
+
+  ProductionEC2PublicIP:
+    Description: Public IP address of Production VPC EC2 instance
+    Value: !GetAtt ProductionEC2Instance.PublicIp
+    Export:
+      Name: !Sub '${AWS::StackName}-Production-EC2-PublicIP'
+
+  DevelopmentEC2InstanceId:
+    Description: Instance ID of Development VPC EC2 instance
+    Value: !Ref DevelopmentEC2Instance
+    Export:
+      Name: !Sub '${AWS::StackName}-Development-EC2-InstanceId'
+
+  DevelopmentEC2PublicIP:
+    Description: Public IP address of Development VPC EC2 instance
+    Value: !GetAtt DevelopmentEC2Instance.PublicIp
+    Export:
+      Name: !Sub '${AWS::StackName}-Development-EC2-PublicIP'
+

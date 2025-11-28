@@ -1,0 +1,11 @@
+template-file-path: ec2-instances-template.yaml
+stack-name: ec2-instances-stack
+region: us-west-2
+parameters:
+  VPCStackName: vpc-network-stack
+  KeyPairName: cft-key
+tags:
+  Project: EC2-Instances
+  ManagedBy: GitSync
+
+
