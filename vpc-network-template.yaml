@@ -280,6 +280,50 @@ Resources:
         - Key: Environment
           Value: !Ref VPC2Environment
 
+  ProductionVPCPrivateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Production VPC EC2 instance - allows SSH and ICMP
+      VpcId: !Ref VPC1
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: Allow SSH from anywhere
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow ICMP (ping) from anywhere
+      Tags:
+        - Key: Name
+          Value: Production-VPC-Private-EC2-SecurityGroup
+        - Key: Environment
+          Value: !Ref VPC1Environment
+
+  DevelopmentVPCPrivateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Development VPC EC2 instance - allows SSH and ICMP
+      VpcId: !Ref VPC2
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: Allow SSH from anywhere
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow ICMP (ping) from anywhere
+      Tags:
+        - Key: Name
+          Value: Development-VPC-Private-EC2-SecurityGroup
+        - Key: Environment
+          Value: !Ref VPC2Environment
+
   ProductionEC2Instance:
     Type: AWS::EC2::Instance
     Properties:
@@ -307,6 +351,36 @@ Resources:
       Tags:
         - Key: Name
           Value: Development-VPC-EC2-Instance
+        - Key: Environment
+          Value: !Ref VPC2Environment
+
+  ProductionEC2PrivateInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref UbuntuAMIId
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      SubnetId: !Ref VPC1PrivateSubnet
+      SecurityGroupIds:
+        - !Ref ProductionVPCPrivateSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Production-VPC-Private-EC2-Instance
+        - Key: Environment
+          Value: !Ref VPC1Environment
+
+  DevelopmentEC2PrivateInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref UbuntuAMIId
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      SubnetId: !Ref VPC2PrivateSubnet
+      SecurityGroupIds:
+        - !Ref DevelopmentVPCPrivateSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Development-VPC-Private-EC2-Instance
         - Key: Environment
           Value: !Ref VPC2Environment
 
@@ -370,4 +444,28 @@ Outputs:
     Value: !GetAtt DevelopmentEC2Instance.PublicIp
     Export:
       Name: !Sub '${AWS::StackName}-Development-EC2-PublicIP'
+
+  ProductionEC2PrivateInstanceId:
+    Description: Instance ID of Production VPC Private EC2 instance
+    Value: !Ref ProductionEC2PrivateInstance
+    Export:
+      Name: !Sub '${AWS::StackName}-Production-Private-EC2-InstanceId'
+
+  ProductionEC2PrivateIP:
+    Description: Private IP address of Production VPC Private EC2 instance
+    Value: !GetAtt ProductionEC2PrivateInstance.PrivateIp
+    Export:
+      Name: !Sub '${AWS::StackName}-Production-Private-EC2-PrivateIP'
+
+  DevelopmentEC2PrivateInstanceId:
+    Description: Instance ID of Development VPC Private EC2 instance
+    Value: !Ref DevelopmentEC2PrivateInstance
+    Export:
+      Name: !Sub '${AWS::StackName}-Development-Private-EC2-InstanceId'
+
+  DevelopmentEC2PrivateIP:
+    Description: Private IP address of Development VPC Private EC2 instance
+    Value: !GetAtt DevelopmentEC2PrivateInstance.PrivateIp
+    Export:
+      Name: !Sub '${AWS::StackName}-Development-Private-EC2-PrivateIP'
 
