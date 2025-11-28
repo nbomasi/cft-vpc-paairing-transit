@@ -289,7 +289,6 @@ Resources:
       SubnetId: !Ref VPC1PublicSubnet
       SecurityGroupIds:
         - !Ref ProductionVPCSecurityGroup
-      AssociatePublicIpAddress: true
       Tags:
         - Key: Name
           Value: Production-VPC-EC2-Instance
@@ -305,7 +304,6 @@ Resources:
       SubnetId: !Ref VPC2PublicSubnet
       SecurityGroupIds:
         - !Ref DevelopmentVPCSecurityGroup
-      AssociatePublicIpAddress: true
       Tags:
         - Key: Name
           Value: Development-VPC-EC2-Instance
